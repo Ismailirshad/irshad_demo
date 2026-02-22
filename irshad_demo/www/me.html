@@ -1,0 +1,180 @@
+<input type="hidden" id="csrf_token" value="{{ frappe.session.csrf_token }}">
+<style>
+.main {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    background: white;
+    font-family: sans-serif;
+}
+
+.order-column {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    min-height: 500px;
+}
+
+.header {
+    padding: 12px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 8px 8px 0 0;
+    color: white;
+}
+
+/* color for order status  */
+.received { background: blue; }
+.preparing { background: palegoldenrod; color: #333; }
+.ready { background: greenyellow; }
+
+
+.order-card {
+    background: white;
+    margin: 10px;
+    padding: 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px;
+}
+
+
+.order-modal {
+    position: fixed;
+    inset: 0; 
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 300px;
+    text-align: center;
+    box-shadow: 0 2px 4px;
+}
+.content {
+    padding: 10px;
+    min-height: 400px; 
+}
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* for button */
+.next-btn { background: blue; color: white; border: none; padding: 10px; flex: 1; border-radius: 4px; cursor: pointer; }
+.close-btn { background: palegoldenrod; border: none; padding: 10px; flex: 1; border-radius: 4px; cursor: pointer; }
+</style>
+
+<div class="container">
+    <div class="main">
+    <div class="order-column">
+    <div class="header received">RECEIVED</div>
+    <div id="order-received" class="content"></div>
+   </div>
+
+    <div class="order-column">
+    <div class="header preparing">PREPARING</div>
+    <div id="order-preparing" class="content"></div>
+    </div>
+
+    <div class="order-column">
+    <div class="header ready">READY</div>
+    <div id="order-ready" class="content"></div>
+    </div>
+    </div>
+</div>
+
+<div id="modal-container" class="order-modal" style="display:none;">
+    <div class="modal-card">
+    <h3 id="order-id">Order Details</h3>
+    <hr>
+    <p>Status: <span id="order-status"></span></p>
+    <div class="modal-actions">
+    <button class="close-btn" onclick="closeModal()">Close</button>
+    <button id="btn-next" class="next-btn">Move to Next Stage →</button>
+    </div>
+    </div>
+</div>
+
+
+frappe.csrf_token = document.getElementById('csrf_token').value;
+$.ajaxSetup({ headers: { 'X-Frappe-CSRF-Token': frappe.csrf_token } });
+
+// template for each orders
+const cardTemplate = (order) => `
+    <div class="order-card" onclick="openPopup('${order.name}', '${order.status}')">
+        <b>#${order.name}</b><br>
+        <small>${order.pos_invoice || ''}</small>
+    </div>
+`;
+
+function renderOrders(orders) {
+    // Map your statuses to your new element IDs
+    const columns = ['Received', 'Preparing', 'Ready'];
+
+    columns.forEach(status => {
+        const filtered = orders.filter(o => o.status === status);
+        const container = document.getElementById(`order-${status.toLowerCase()}`);
+        
+        if (container) {
+            container.innerHTML = filtered.map(cardTemplate).join("");
+        }
+    });
+}
+
+// fetching data from kitchen-order lists
+function refresh() {
+    frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Kitchen Order",
+            fields: ["name", "status", "pos_invoice"],
+            filters: { status: ["not in", ["Served"]] }
+        },
+        callback: (res) => renderOrders(res.message || [])
+    });
+}
+
+// when clicks then list open popum
+function openPopup(id, status) {
+    
+    const modal = document.getElementById('modal-container');
+    document.getElementById('order-id').innerText = `Order #${id}`;
+    document.getElementById('order-status').innerText = status;
+    modal.style.display = 'flex';
+
+    document.getElementById('btn-next').onclick = () => {
+        
+        const stages = ['Received', 'Preparing', 'Ready', 'Served', 'Completed'];
+        const nextStatus = stages[stages.indexOf(status) + 1];
+
+        frappe.call({
+            method: "frappe.client.set_value",
+            args: { 
+                doctype: "Kitchen Order", 
+                name: id, 
+                fieldname: "status", 
+                value: nextStatus 
+            },
+            callback: () => {
+                closeModal();
+                refresh();
+            }
+        });
+    };
+}
+
+
+const closeModal = () => {
+    document.getElementById('modal-container').style.display = 'none';
+};
+
+
+refresh();

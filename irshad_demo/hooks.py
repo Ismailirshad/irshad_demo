@@ -5,6 +5,62 @@ app_description = "irshad_demo"
 app_email = "irshadsha164@gmail.com"
 app_license = "mit"
 
+doc_events={
+    "Item":{
+        "after_insert":"irshad_demo.api.item_after_insert"
+    },
+    "Supplier":{
+        "after_insert":"irshad_demo.api.new_supplier_added"
+    },
+    "Issue":{
+         "validate":"irshad_demo.api.ticket_issued"
+    },
+    "Sales Order":{
+        "on_submit":"irshad_demo.api.sales_order_recieved"
+    },
+    "Customer":{
+        "after_insert":"irshad_demo.api.new_customer_created",
+        "after_delete":"irshad_demo.api.after_customer_delete"
+        # "on_trash":"irshad_demo.api.block_delete"
+    },
+    "Web Page":{
+        "validate": "irshad_demo.api.validate_web_form"
+    },
+    "Task_demo":{
+        "validate": [
+            "irshad_demo.task_system.api.validate_task",
+            "irshad_demo.task_system.api.calculate_hours"
+        ],
+        "on_submit":"irshad_demo.task_system.api.update_project_demo_status",
+    },
+    "Delivery Note":{
+        "on_submit":"irshad_demo.task_system.api.validate_stock_before_sale"
+    },
+    "Task Log":{
+        "on_submit":"irshad_demo.api.update_project_demo_status"
+    },
+    "POS Invoice":{
+        "on_submit":"irshad_demo.pos_submit.api.handle_pos_submit"
+    }
+    
+}
+
+shedular_events = {
+    "daily":["irshad_demo.api.send_issue_reminders",
+             "irshad_demo.task_system.api.auto_mark_overdue"],
+    "weekly":["irshad_demo.api.auto_close_issue"],  
+}
+
+fixtures = [
+   "Web Page"
+]
+
+# doc_events = {
+#     "Customer":{
+#         "validate":"irshad_demo.api.on_validate"
+#     }
+# }
+
 # Apps
 # ------------------
 
