@@ -95,3 +95,23 @@ def update_pharmacy_order_status(name, new_status):
     doc.status = new_status
     doc.save()
     return "Updated"    
+
+# For Custom  Employee Form 
+@frappe.whitelist()
+def add_employee(full_name, age, country):
+    doc = frappe.get_doc({
+        "doctype": "Employee Details",
+        "employee_name": full_name,
+        "age": age,
+        "country": country
+    })
+
+    doc.insert()
+    return "Employee added successfully"
+
+@frappe.whitelist()
+def get_employees():
+    return frappe.get_all(
+        "Employee Details",
+        fields=["employee_name", "age", "country"]
+    )    
