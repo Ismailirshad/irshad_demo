@@ -41,8 +41,7 @@ doc_events={
     },
     "POS Invoice":{
         "on_submit":"irshad_demo.pos_submit.api.handle_pos_submit"
-    }
-    
+    },
 }
 
 shedular_events = {
